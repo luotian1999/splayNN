@@ -12,7 +12,7 @@ import copy
 
 
 
-SAMPLE_SIZE = 1
+SAMPLE_SIZE = 5
 
 def nMax(l, n):
 
@@ -71,12 +71,22 @@ def trainDiscrim(inputs, targets):
   for i in range(len(inputs)):
     #print(type(inputs[i]))
     output = model(inputs[i].float())
+    res = torch.argmax(output, dim=0) 
     #print(output)
-    if output >= 0.5 and targets[i] == 1.0:
+    if res == targets[i]:
       correct += 1
-    if output < 0.5 and targets[i] == 0.0:
-      correct += 1
-    loss = loss_func(output[0], targets[i])
+
+    if targets[i] == 1.0:
+      target = torch.from_numpy(np.array([1., 0.])).float()
+    else:
+      target = torch.from_numpy(np.array([0., 1.])).float()
+
+    target = target.to(device)
+    '''
+    print(output)
+    print(target)
+    '''
+    loss = loss_func(output, target)
     loss.backward()
     #print(loss.grad)
     optimizer.step()
@@ -85,11 +95,12 @@ def trainDiscrim(inputs, targets):
 
 def testDiscrim(inputs, targets):
   correct = 0
+  inputs.to(device)
   for i in range(len(inputs)):
-    output = model(inputs[i])
-    if output >= 0.5 and targets[i] == 1.0:
-      correct += 1
-    if output < 0.5 and targets[i] == 0.0:
+    output = model(inputs[i].float())
+    res = torch.argmax(output, dim=0) 
+    #print(output)
+    if res == targets[i]:
       correct += 1
   return correct
 
@@ -115,16 +126,17 @@ for epoch in range(10):
       noise.append(noisepfx)
 
     inputs = np.array(inputs)
+    #print(inputs)
     noise = np.array(noise)
 
     inputs = torch.from_numpy(inputs).type(torch.LongTensor)
     noise = torch.from_numpy(noise).type(torch.LongTensor)
     
     targets = np.ones(len(s))
-    targets = torch.from_numpy(targets).float()
+    targets = torch.from_numpy(targets)
 
     noise_targets = np.zeros(len(s))
-    noise_targets = torch.from_numpy(noise_targets).float()
+    noise_targets = torch.from_numpy(noise_targets)
 
     correct += trainDiscrim(inputs, targets)
     correct += trainDiscrim(noise, noise_targets)
